@@ -1,0 +1,342 @@
+Appium+python测试app实例
+Appium和selenium差不到，只是一个用于测web，一个用于测APP。下面记录一下我搭的测试框架，同样是基于PO模式，用的unittest.
+
+         最后测试报告如下：
+
+ 
+
+ 
+
+ 
+
+1.1      代码结构
+
+ 
+
+ 
+
+         这个结构是不是很熟悉，都是基于PO模式，用的是unittest框架。
+
+1.2      配置文件globalparameter.py
+
+ 
+
+复制代码
+ 1 # coding:utf-8
+ 2 __author__ = 'Helen'
+ 3 '''
+ 4 description:配置全局参数
+ 5 '''
+ 6 import time,os
+ 7 
+ 8 # 获取项目路径
+ 9 # project_path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)[0]), '.'))
+10 project_path = os.path.abspath(os.path.join(os.path.dirname(os.path.split(os.path.realpath(__file__))[0]), '.'))
+11 # 测试用例代码存放路径（用于构建suite,注意该文件夹下的文件都应该以test开头命名）
+12 test_case_path = project_path+"\\src\\test_case"
+13 # print u'日志路径：'+log_path
+14 # 测试报告存储路径，并以当前时间作为报告名称前缀
+15 report_path = project_path+"\\report\\"
+16 report_name = report_path+time.strftime('%Y%m%d%H%S', time.localtime())
+17 # 设置发送测试报告的公共邮箱、用户名和密码
+18 smtp_sever = 'smtp.exmail.qq.com'  # 邮箱SMTP服务，各大运营商的smtp服务可以在网上找，然后可以在foxmail这些工具中验正
+19 email_name = "888@x88.com"  # 发件人名称
+20 email_password = "*888"  # 发件人登录密码
+21 email_To = '888@qq.com;88@88.com'  # 收件人
+复制代码
+ 
+
+ 
+
+1.3      配置文件driver_configure.py
+
+ 
+
+复制代码
+ 1 # coding:utf-8
+ 2 __author__ = 'Helen'
+ 3 '''
+ 4 description:driver配置
+ 5 '''
+ 6 from appium import webdriver
+ 7 
+ 8 
+ 9 class driver_configure():
+10     def get_driver(self):
+11         '''获取driver'''
+12         try:
+13             self.desired_caps = {}
+14             self.desired_caps['platformName'] = 'Android'  # 平台
+15             self.desired_caps['platformVersion'] = '6.0'  # 系统版本
+16             # self.desired_caps['app'] = 'E:/autotestingPro/app/UCliulanqi_701.apk'   # 指向.apk文件，如果设置appPackage和appActivity，那么这项会被忽略
+17             self.desired_caps['appPackage'] = 'com.xsteach.appedu'     # APK包名
+18             self.desired_caps['appActivity'] = 'com.qihoo.util.StartActivity'     # 被测程序启动时的Activity
+19             self.desired_caps['unicodeKeyboard'] = 'true'   # 是否支持unicode的键盘。如果需要输入中文，要设置为“true”
+20             self.desired_caps['resetKeyboard'] = 'true' # 是否在测试结束后将键盘重轩为系统默认的输入法。
+21             self.desired_caps['newCommandTimeout'] = '120' # Appium服务器待appium客户端发送新消息的时间。默认为60秒
+22             self.desired_caps['deviceName'] = '612QKBQD225A2'     # 手机ID
+23             self.desired_caps['noReset'] = True # true:不重新安装APP，false:重新安装app
+24             self.driver = webdriver.Remote("http://127.0.0.1:4723/wd/hub",self.desired_caps)
+25             return self.driver
+26         except Exception,e:
+27             raise e
+复制代码
+ 
+
+ 
+
+1.4      公共类Base_page.py
+
+ 
+
+复制代码
+# coding:utf-8
+__author__ = 'Helen'
+'''
+description:UI页面公共类
+'''
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
+class Base_page:
+    def __init__(self,driver):
+        self.driver = driver
+
+    def find_element(self,*loc):
+        '''重写find_element方法，显式等待'''
+        try:
+            WebDriverWait(self.driver, 10).until(EC.visibility_of_element_located(loc))
+            return self.driver.find_element(*loc)
+        except Exception as e:
+            raise e
+
+    def send_keys(self,value,*loc):
+        try:
+            self.find_element(*loc).clear()
+            self.find_element(*loc).send_keys(value)
+        except AttributeError,e:
+            raise e
+复制代码
+ 
+
+ 
+
+1.5      公共类gesture_mainpulation
+
+ 
+
+复制代码
+# coding:utf-8
+__author__ = 'Helen'
+'''
+description:手势操作
+'''
+class gesture_mainpulation:
+    def swipe_left(self,driver):
+        '''左滑'''
+        x = driver.get_window_size()['width']
+        y = driver.get_window_size()['height']
+        driver.swipe(x*3/4,y/4,x/4,y/4)
+
+    def swipe_right(self,driver):
+        '''右滑'''
+        x = driver.get_window_size()['width']
+        y = driver.get_window_size()['height']
+        driver.swipe(x/4,y/4,x*3/4,y/4)
+
+    def swipe_down(self,driver):
+        '''下滑'''
+        x = driver.get_window_size()['width']
+        y = driver.get_window_size()['height']
+        driver.swipe(x/2,y*3/4,x/2,y/4)
+
+    def swipe_up(self,driver):
+        '''上滑'''
+        x = driver.get_window_size()['width']
+        y = driver.get_window_size()['height']
+        driver.swipe(x/2,y/4,x/2,y*3/4)
+复制代码
+ 
+
+ 
+
+1.6      公共类send_email
+
+ 
+
+复制代码
+ 1 # coding:utf-8
+ 2 __author__ = 'Helen'
+ 3 '''
+ 4 description:邮件发送最新的测试报告
+ 5 '''
+ 6 import os,smtplib,os.path
+ 7 from config import globalparameter as gl
+ 8 from email.mime.multipart import MIMEMultipart
+ 9 from email.mime.text import MIMEText
+10 
+11 
+12 class send_email:
+13     # 定义邮件内容
+14     def email_init(self,report,reportName):
+15         with open(report,'rb')as f:
+16             mail_body = f.read()
+17 
+18         # 创建一个带附件的邮件实例
+19         msg = MIMEMultipart()
+20         # 以测试报告作为邮件正文
+21         msg.attach(MIMEText(mail_body,'html','utf-8'))
+22         report_file = MIMEText(mail_body,'html','utf-8')
+23         # 定义附件名称（附件的名称可以随便定义，你写的是什么邮件里面显示的就是什么）
+24         report_file["Content-Disposition"] = 'attachment;filename='+reportName
+25         msg.attach(report_file) # 添加附件
+26         msg['Subject'] = '88APP自动化测试报告:'+reportName # 邮件标题
+27         msg['From'] = gl.email_name  #发件人
+28         msg['To'] = gl.email_To  #收件人列表
+29         try:
+30             server = smtplib.SMTP(gl.smtp_sever)
+31             server.login(gl.email_name,gl.email_password)
+32             server.sendmail(msg['From'],msg['To'].split(';'),msg.as_string())
+33             server.quit()
+34         except smtplib.SMTPException:
+35             self.mylog.error(u'邮件发送测试报告失败 at'+__file__)
+36 
+37     def sendReport(self):
+38         # 找到最新的测试报告
+39         report_list = os.listdir(gl.report_path)
+40         report_list.sort(key=lambda fn: os.path.getmtime(gl.report_path+fn) if not os.path.isdir(gl.report_path+fn) else 0)
+41         new_report = os.path.join(gl.report_path,report_list[-1])
+42         # 发送邮件
+43         self.email_init(new_report,report_list[-1])
+复制代码
+ 
+
+ 
+
+1.7      页面事件login_page.py（只记录一个，其他的都一样）
+
+ 
+
+复制代码
+ 1 # coding:utf-8
+ 2 __author__ = 'Helen'
+ 3 '''
+ 4 description:登录页
+ 5 '''
+ 6 from src.common import Base_page
+ 7 from appium.webdriver.common import mobileby
+ 8 
+ 9 
+10 class login_page(Base_page.Base_page):
+11     by = mobileby.MobileBy()
+12     etUser_loc = (by.ID,"com.xsteach.appedu:id/etUser")
+13     etPws_loc = (by.ID,"com.xsteach.appedu:id/etPwd")
+14     btnLogin_loc = (by.ID,"com.xsteach.appedu:id/btnLogin")
+15 
+16     def input_user(self,username):
+17         self.send_keys(username,*self.etUser_loc)
+18 
+19     def input_Pws(self,password):
+20         self.send_keys(password,*self.etPws_loc)
+21 
+22     def click_btnLogin(self):
+23         self.find_element(*self.btnLogin_loc).click()
+复制代码
+ 
+
+1.8      测试用例test_appium.py
+
+ 
+
+复制代码
+ 1 # coding:utf-8
+ 2 __author__ = 'Helen'
+ 3 '''
+ 4 description:测试登录和退出功能
+ 5 '''
+ 6 import unittest
+ 7 
+ 8 from src.pages import index_page,myInfo_page,login_page,relative_page
+ 9 from src.common import gesture_manipulation
+10 from config import driver_configure
+11 
+12 
+13 class test_appium(unittest.TestCase):
+14     @classmethod
+15     def setUpClass(cls):
+16         dconfigur = driver_configure.driver_configure()
+17         cls.driver = dconfigur.get_driver()
+18         cls.GM = gesture_manipulation.gesture_mainpulation()
+19 
+20     def test_01login(self):
+21         '''测试登录功能'''
+22         # 主页面
+23         self.index_page = index_page.index_page(self.driver)
+24         self.index_page.click_btnCancel()
+25         self.GM.swipe_down(self.driver)
+26         self.index_page.click_inXSTeach()
+27         # 我在邢帅
+28         self.myInfo_page = myInfo_page.myInfo_page(self.driver)
+29         self.myInfo_page.click_login_btn()
+30         # 登录页
+31         self.login_page = login_page.login_page(self.driver)
+32         self.login_page.input_user("lihailing@xsteqach.com")
+33         self.login_page.input_Pws("123456")
+34         self.login_page.click_btnLogin()
+35         self.assertEqual(u'签到',self.myInfo_page.getText_signHint())
+36 
+37     def test_02loginOut(self):
+38         '''测试退出功能'''
+39         self.myInfo_page = myInfo_page.myInfo_page(self.driver)
+40         self.myInfo_page.click_relative()
+41         self.relative = relative_page.relative_page(self.driver)
+42         self.relative.click_tvLoginOut()
+43         self.relative.click_btnYes()
+44         self.assertEqual(u'点击登录',self.myInfo_page.getText_login())
+45 
+46     @classmethod
+47     def tearDownClass(cls):
+48         cls.driver.quit()
+49 
+50 if __name__=='__main__':
+51     unittest.main()
+复制代码
+ 
+
+ 
+
+1.9      执行测试runtest.py
+
+ 
+
+复制代码
+# coding:utf-8
+__author__ = 'Helen'
+'''
+description:执行测试
+'''
+import unittest,time,HTMLTestRunner
+from config.globalparameter import test_case_path,report_name
+from src.common import send_mail
+
+
+# 构建测试集,包含src/test_case目录下的所有以test开头的.py文件
+suite = unittest.defaultTestLoader.discover(start_dir=test_case_path,pattern='test*.py')
+
+# 执行测试
+if __name__=="__main__":
+    report = report_name+"Report.html"
+    fb = open(report,'wb')
+    runner = HTMLTestRunner.HTMLTestRunner(
+        stream=fb,
+        title=u'88APP自动化测试报告',
+        description=u'项目描述：生产环境'
+    )
+    runner.run(suite)
+    fb.close()
+    # 发送邮件
+    time.sleep(10)  # 设置睡眠时间，等待测试报告生成完毕（这里被坑了＝＝）
+    email = send_mail.send_email()
+    email.sendReport()
+复制代码
